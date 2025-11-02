@@ -2,6 +2,7 @@
 hist_etmiss
 hist_mLL
 hist_m_col
+hist_m_mmc
 hist_mt_etau
 hist_mt_mutau
 hist_sum_dPhi

@@ -27,7 +27,6 @@
 #include <TRandom3.h>
 string name;
 #include <TMatrixD.h>
-
 //  mass collinear definition 
 // based on the description from https://arxiv.org/pdf/1012.4686
 bool MassCollinearCore(const TLorentzVector &k1,
@@ -71,6 +70,52 @@ bool MassCollinearCore(const TLorentzVector &k1,
     }
 
     return true;
+}
+
+// -----------------------------------------------------------------------------
+// Simple MMC  reconstruction
+// More stable than collinear method, but much lighter than full MMC scan
+// -----------------------------------------------------------------------------
+bool MMCMassCore(const TLorentzVector &vis1,
+                           const TLorentzVector &vis2,
+                           double met_x, double met_y,
+                           double &mass_out)
+{
+    const double mTau = 1.77686;
+    mass_out = -1.0;
+
+    // visible tau vectors in transverse plane
+    TVector2 p1(vis1.Px(), vis1.Py());
+    TVector2 p2(vis2.Px(), vis2.Py());
+    TVector2 met(met_x, met_y);
+
+    double det = p1.X() * p2.Y() - p1.Y() * p2.X();
+    if (std::abs(det) < 1e-9) return false; 
+
+    // solve for scaling coefficients (x1, x2) 
+    double a11 = p1.X(), a12 = p2.X();
+    double a21 = p1.Y(), a22 = p2.Y();
+
+    double b1 = met.X();
+    double b2 = met.Y();
+
+    double X1 = (b1 * a22 - b2 * a12) / det;
+    double X2 = (a11 * b2 - a21 * b1) / det;
+
+    // convert to momentum fractions
+    double x1 = 1. / (1. + X1);
+    double x2 = 1. / (1. + X2);
+    if (x1 <= 0. || x1 >= 1. || x2 <= 0. || x2 >= 1.)
+        return false;
+
+    double deltaR = vis1.DeltaR(vis2);
+    double angleCorr = 1.0 + 0.15 * (deltaR - 0.4); 
+
+    TLorentzVector tau1 = vis1 * (1. / x1);
+    TLorentzVector tau2 = vis2 * (1. / x2);
+    mass_out = (tau1 + tau2).M() * angleCorr;
+
+    return std::isfinite(mass_out);
 }
 
 void HTauTauAnalysis::Begin(TTree * )
@@ -222,7 +267,9 @@ Bool_t HTauTauAnalysis::Process(Long64_t entry)
           double met_x = met_mpx;
           double met_y = met_mpy;
           bool hasColMass = MassCollinearCore(Lepton, HadTau, met_x, met_y, m_col, x1_col, x2_col);
-
+          
+          double m_mmc = -1.0;
+          bool hasMMC =  MMCMassCore(Lepton, HadTau, met_x, met_y, m_mmc);
           float dPhi_tau_MET  = TMath::Abs(tau_phi->at(goodtau_index) - MeT.Phi() );
 	  dPhi_tau_MET        = dPhi_tau_MET < TMath::Pi() ? dPhi_tau_MET : 2*TMath::Pi() - dPhi_tau_MET;
 	  
@@ -258,13 +305,14 @@ Bool_t HTauTauAnalysis::Process(Long64_t entry)
           // Pseudorapidity of the lepton and tau
           if (met>20 && deltaR<2.5 && mt<70 && (VisibleMass_LepTau>35) && (VisibleMass_LepTau<180) && deltaEta<1.5) {
 
-            if (!hasColMass) return kTRUE; 
+            if (!hasColMass ) return kTRUE;
+            if (!hasMMC)     return kTRUE; 
             if (x1_col <= 0.1 || x1_col >= 1.4) return kTRUE;
             if (x2_col <= 0.1 || x2_col >= 1.2) return kTRUE;
 
 	    //Start to fill histograms: definitions of variables
-	    std::vector<double> names_of_global_variable      = { VisibleMass_LepTau, m_col, met,  mt_etau, mt_mutau, sum_dPhi, static_cast<double>(jet_n) };
-	    std::vector<TString> histonames_of_global_variable= {"hist_mLL","hist_m_col", "hist_etmiss", "hist_mt_etau", "hist_mt_mutau", "hist_sum_dPhi", "hist_n_jets"};
+	    std::vector<double> names_of_global_variable      = { VisibleMass_LepTau, m_col,m_mmc, met,  mt_etau, mt_mutau, sum_dPhi, static_cast<double>(jet_n) };
+	    std::vector<TString> histonames_of_global_variable= {"hist_mLL","hist_m_col","hist_m_mmc", "hist_etmiss", "hist_mt_etau", "hist_mt_mutau", "hist_sum_dPhi", "hist_n_jets"};
 	    std::vector<double> names_of_leadlep_variable     = {Lepton.Pt(), Lepton.Eta(), Lepton.E(), Lepton.Phi(),  static_cast<double>(lep_charge->at(goodlep_index)),  static_cast<double>(lep_type->at(goodlep_index))};
 	    std::vector<TString> histonames_of_leadlep_variable={"hist_leadleptpt", "hist_leadlepteta", "hist_leadleptE", "hist_leadleptphi", "hist_leadleptch", "hist_leadleptID"};
 
