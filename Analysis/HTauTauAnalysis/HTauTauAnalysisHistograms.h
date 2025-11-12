@@ -13,6 +13,7 @@ void HTauTauAnalysis::define_histograms()
   hist_mLL          = new TH1F("hist_mLL",         "Visible mass; m_{vis} [GeV];Events / bin", 30, 20, 200);
   hist_MMC          = new TH1F("hist_MMC",          "Invariant mass (MMC); m^{MMC}_{#tau#tau} [GeV];Events / bin", 15, 50, 200);
   hist_m_col = new TH1F("hist_m_col","Colinear Mass; m^{Colinear}_{#tau#tau} [GeV];Events / bin", 25, 20, 200);
+  hist_m_mmc          = new TH1F("hist_m_mmc",          "Invariant mass (MMC); m^{MMC}_{#tau#tau} [GeV];Events / bin", 25, 20, 200);
   hist_mt_etau      = new TH1F("hist_mt_etau",      "Transverse Mass; m_{T}(e,E_{T}^{miss}) [GeV];Events / bin"  , 30, 1, 150);
   hist_mt_mutau     = new TH1F("hist_mt_mutau",     "Transverse Mass; m_{T}(#mu,E_{T}^{miss}) [GeV];Events / bin", 30, 1, 150);
   hist_sum_dPhi     = new TH1F("hist_sum_dPhi",     "sum dPhi; #Sigma#Delta#phi;Events / bin", 30, 0, 6.3);
@@ -61,6 +62,7 @@ void HTauTauAnalysis::FillOutputList()
   GetOutputList()->Add(hist_mLL);   
   GetOutputList()->Add(hist_MMC);  
   GetOutputList()->Add(hist_m_col);
+  GetOutputList()->Add(hist_m_mmc);
   GetOutputList()->Add(hist_mt_etau);
   GetOutputList()->Add(hist_mt_mutau);
   // Add Leading Lepton histograms
@@ -108,6 +110,7 @@ void HTauTauAnalysis::WriteHistograms()
   hist_mLL->Write();
   hist_MMC->Write();
   hist_m_col->Write();
+  hist_m_mmc->Write();
   hist_mt_etau->Write();
   hist_mt_mutau->Write();
 
@@ -154,6 +157,7 @@ void HTauTauAnalysis::FillHistogramsGlobal( double m, float w , TString s)
   if (s.Contains("hist_mLL")) hist_mLL->Fill(m,w);
   if (s.Contains("hist_MMC")) hist_MMC->Fill(m,w);
   if (s.Contains("hist_m_col")) hist_m_col->Fill(m,w);
+  if (s.Contains("hist_m_mmc")) hist_m_mmc->Fill(m,w);
   if (s.Contains("hist_mt_etau")) hist_mt_etau->Fill(m,w);
   if (s.Contains("hist_mt_mutau")) hist_mt_mutau->Fill(m,w);
   if (s.Contains("hist_n_jets")) hist_n_jets->Fill(m,w);

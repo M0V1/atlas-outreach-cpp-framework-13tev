@@ -29,6 +29,7 @@ public :
   TH1F *hist_mLL    = 0;
   TH1F *hist_MMC    = 0;
   TH1F *hist_m_col    = 0;
+  TH1F *hist_m_mmc    = 0;
   TH1F *hist_mt_etau    = 0;
   TH1F *hist_mt_mutau    = 0;
   TH1F *hist_sum_dPhi   = 0;
